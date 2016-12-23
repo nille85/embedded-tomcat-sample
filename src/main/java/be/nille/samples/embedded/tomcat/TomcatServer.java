@@ -5,14 +5,12 @@
  */
 package be.nille.samples.embedded.tomcat;
 
+import be.nille.samples.embedded.webapp.WebApplicationInitializer;
 import java.io.File;
-import javax.servlet.ServletException;
+import java.util.HashSet;
+import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
-import org.apache.catalina.WebResourceRoot;
-import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
-import org.apache.catalina.webresources.DirResourceSet;
-import org.apache.catalina.webresources.StandardRoot;
 
 /**
  *
@@ -22,27 +20,27 @@ public class TomcatServer implements EmbeddedServer {
 
     @Override
     public void start(ServerContext context) {
-        try {
-            Tomcat tomcat = new Tomcat();
 
+        try {
+            //String docBase = "src/main/webapp/";
+
+            Tomcat tomcat = new Tomcat();
             tomcat.setPort(context.getPort());
 
-            String webappDirLocation = "src/main/webapp/";
-            StandardContext ctx = (StandardContext) tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
-            System.out.println("configuring app with basedir: " + new File("./" + webappDirLocation).getAbsolutePath());
+            //static files?
+            //tomcat.addWebapp("/", new File(docBase).getAbsolutePath());
+            Context ctx = tomcat.addContext("/app", new File(".").getAbsolutePath());
 
-        
-            File additionWebInfClasses = new File("target/classes");
-            WebResourceRoot resources = new StandardRoot(ctx);
-            resources.addPreResources(new DirResourceSet(resources, "/WEB-INF/classes",
-                    additionWebInfClasses.getAbsolutePath(), "/"));
-            ctx.setResources(resources);
+            ctx.addServletContainerInitializer(new TomcatApplicationInitializer(), new HashSet<Class<?>>());
+
+            ctx.addServletContainerInitializer(new WebApplicationInitializer(), new HashSet<Class<?>>());
 
             tomcat.start();
             tomcat.getServer().await();
-        } catch (ServletException | LifecycleException ex) {
-            throw new RuntimeException("Could not start Tomcat Server", ex);
+        } catch (LifecycleException ex) {
+            throw new RuntimeException(ex.getMessage(), ex);
         }
+
     }
 
 }
